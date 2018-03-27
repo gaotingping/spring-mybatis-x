@@ -1,7 +1,4 @@
-# spring-mybatis-x
-spring-mybatis-x
-
-#扩展spring+mybatis:
+扩展spring+mybatis:
 
 1.读写分离
 
