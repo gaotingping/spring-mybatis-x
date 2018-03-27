@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc" xmlns:jee="http://www.springframework.org/schema/jee"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	xmlns:util="http://www.springframework.org/schema/util" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:task="http://www.springframework.org/schema/task" xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+	xmlns:cache="http://www.springframework.org/schema/cache"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.2.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-3.2.xsd
+		http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-3.2.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.2.xsd
+		http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+		http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.2.xsd 
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.2.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.2.xsd
+		http://www.springframework.org/schema/data/mongo http://www.springframework.org/schema/data/mongo/spring-mongo-1.5.xsd
+		http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd"
+	default-lazy-init="false">
+	
+	<description>测试mybatis读写分离支持:对开发人员透明</description>
+	
+	<context:property-placeholder location="classpath:config.properties"/>
+	
+	<bean id="baseDataSource" abstract="true">
+		<property name="driverClassName" value="${jdbc.driver}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="initialSize" value="1" />
+		<property name="minIdle" value="1" />
+		<property name="maxActive" value="20" />
+		<property name="maxWait" value="60000" />
+		<property name="timeBetweenEvictionRunsMillis" value="60000" />
+		<property name="minEvictableIdleTimeMillis" value="300000" />
+		<property name="validationQuery" value="SELECT 1" />
+		<property name="testWhileIdle" value="true" />
+		<property name="testOnBorrow" value="false" />
+		<property name="testOnReturn" value="false" />
+		<property name="poolPreparedStatements" value="false" />
+		<property name="maxPoolPreparedStatementPerConnectionSize" value="20" />
+		<property name="filters" value="stat" />
+	</bean>
+	
+	<bean id="rDataSource" class="com.alibaba.druid.pool.DruidDataSource" 
+		init-method="init" 
+		destroy-method="close"
+		parent="baseDataSource"> 
+	    	<property name="url" value="${jdbc.url2}"/>
+	</bean>
+	
+	<bean id="wDataSource" class="com.alibaba.druid.pool.DruidDataSource" 
+		init-method="init" 
+		destroy-method="close"
+		parent="baseDataSource"> 
+	    	<property name="url" value="${jdbc.url}"/>
+	</bean>
+	
+	<!-- 这些key有特别意义，不能随便配置 @see com.mvw.rwsupport.common.DBrwFlag -->
+	<bean id="rwDataSource" class="com.mvw.rwsupport.datasource.SimpleDataSourceFactory">
+		<!-- 内部框架会根据设置的key来获取数据源 -->
+		<property name="targetDataSources">  
+           <map>  
+               <entry  key="READ" value-ref="rDataSource"/>  
+               <entry  key="WRITE" value-ref="wDataSource"/>  
+           </map>  
+       </property>
+       <!-- 默认数据源，为了发现问题，建议别配置 -->
+       <!--  
+       	<property name="defaultTargetDataSource" ref="wDataSource"/>
+       -->
+	</bean>
+
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="rwDataSource" />
+		<property name="configLocation" value="classpath:spring/spring-mybatis.xml" />
+		<!-- 拦截器 -->
+		<property name="plugins">
+		    <list>
+		    	<bean class="com.mvw.submeter.SubmeterInterceptor">
+		    	   <property name="submeterManage" ref="submeterManage"/>
+		    	</bean>
+		    </list>
+		</property>
+	</bean>
+	
+	<bean id="submeterManage" class="com.mvw.submeter.DefaultSubmeterManage">
+		<property name="packages">
+		  <list>
+		    <value>com.mvw.mybatis.dao</value>
+		  </list>
+		</property>
+	</bean>
+
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.mvw.mybatis.dao"/>
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+	</bean>
+</beans>

@@ -1,0 +1,16 @@
+#扩展spring+mybatis:
+1.读写分离
+2.单主多从(多数据源)
+3.立写立读支持(个别读方法打主库)
+4.分表(先简单散列)
+
+#FIXME:
+#问题:多个拦截器时，后续拿的是代理对象
+#这样最好在一个拦截器中分担处理多个内容等
+#即:
+多个Interceptor处理器时，后续获取的是有些对象是
+获取的是反射对象，会有如下异常，如:
+    ClassCastException: com.sun.proxy.$Proxy24 cannot be cast to 
+    org.apache.ibatis.executor.statement.RoutingStatementHandler
+对于这个问题我建议，在一个拦截器中抽取
+并且其插件，也不是很方便业务拦截，因为调用那个方法，什么参数等等都不知道

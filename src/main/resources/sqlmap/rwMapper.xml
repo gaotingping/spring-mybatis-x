@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.mvw.mybatis.dao.RwDao">
+
+	<select id="get" resultType="com.mvw.mybatis.model.User">
+	   select id,name from user where id=1
+	</select>
+	
+	<select id="get2" resultType="com.mvw.mybatis.model.User">
+	   select id,name from user where id=1
+	</select>
+	
+	<update id="update">
+		 update user 
+		 set name=#{name}
+		 where id=1
+	</update>
+	
+	<select id="test1" resultType="com.mvw.mybatis.model.User">
+	   select id,name from user where id=1
+	</select>
+	<select id="test2" resultType="com.mvw.mybatis.model.User">
+	   select id,name from user where id=1
+	</select>
+	<select id="test3" resultType="com.mvw.mybatis.model.User">
+	   select id,name from user where id=1
+	</select>
+</mapper>
